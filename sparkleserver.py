@@ -274,7 +274,13 @@ def sparkle_server(environ, start_response):
     for key in data:
         data[key] = data[key][0]
 
-    log_methods = ['apache', 'csv', 'sqlite']
+    methods = [('sparkleserver.log.apache.path', 'apache'),
+               ('sparkleserver.log.sqlite.path', 'sqlite'),
+               ('sparkleserver.log.csv.path', 'csv')]
+    log_methods = []
+    for method in methods:
+        if get_env(method[0], environ, None):
+            log_methods.append(method[1])
     try:
         if 'apache' in log_methods:
             log_apache(data, environ)
