@@ -252,21 +252,37 @@ def render_500(environ, start_response, msg=None):
 
 def sparkle_server(environ, start_response):
     environ['sparkleserver.data.request_time'] = datetime.now()
-    feedpath = get_env('sparkleserver.feedpath', environ)
-    if not feedpath:
-        return render_500(environ, 
-                          start_response,
-                          msg='sparkleserver.feedpath not in environment')
+    feedpath = get_env('sparkleserver.feedpath', environ, None)
+    cumulative = get_env('sparkleserver.cumulative', 
+            environ, [])
+    if not feedpath and not cumulative:
+        return render_500(
+                environ, 
+                start_response,
+                msg='sparkleserver.feedpath or ' +
+                'sparkleserver.cumulative not in environment')
     path = environ['PATH_INFO']
     if not valid_path.match(path):
         return render_404(environ, start_response)
 
-    try:
-        fp = open(os.path.join(feedpath, path[1:]), 'r')
-        environ['sparkleserver.data.response_size'] =\
-                os.fstat(fp.fileno()).st_size
-    except IOError, e:
-        return render_404(environ, start_response)
+    fp = None
+    for cumulative_config in cumulative:
+        if cumulative_config['feed'] == path[1:]:
+            try:
+                fp = open(os.path.join(cumulative_config['feedpath']), 'r')
+                break
+            except IOError, e:
+                return render_500(environ, start_response,
+                        msg='cumulative feed not found: ' +
+                        cumulative_config['feedpath'])
+
+    if not fp:
+        try:
+            fp = open(os.path.join(feedpath, path[1:]), 'r')
+            environ['sparkleserver.data.response_size'] =\
+                    os.fstat(fp.fileno()).st_size
+        except IOError, e:
+            return render_404(environ, start_response)
 
     data = parse_qs(environ['QUERY_STRING'])
     # Assume that we never get duplicate keys, ie:
@@ -295,10 +311,52 @@ def sparkle_server(environ, start_response):
     headers = [('Content-type', 'text/xml')]
     start_response(status, headers)
 
-    if 'wsgi.file_wrapper' in environ:
-        return environ['wsgi.file_wrapper'](fp, block_size)
+    if cumulative:
+        feed = fp.read()
+        import re
+        import glob
+        import markdown2
+        regex = \
+        re.compile(r'\$include\((?P<inc_file>[^\)]*)\)|(?P<changes>\$changes)')
+        def subber(match):
+            matches = match.groupdict()
+            if matches.get('changes', None):
+                regex = re.compile(re.escape(cumulative_config['appname']) + \
+                        '/([a-zA-Z0-9.]*)')
+                version = regex.search(environ['HTTP_USER_AGENT'])
+                content = ''
+                files = \
+                glob.glob(os.path.join(cumulative_config['changelogpath'], 'version_*'))
+                # FIXME: Customised filter
+                # FIXME: Customised sort
+                compare = cmp
+                files.sort(cmp=compare, reverse=True)
+                if not version:
+                    files = [files[0]]
+                else:
+                    version = version.group(1)
+                    files = [f for f in files if
+                            compare(os.path.splitext(os.path.basename(f)[8:])[0],
+                        version) == 1]
+                content = [open(f).read() for f in files]
+                # FIXME: Deal with differnet kinds of content
+                content = [markdown2.markdown(c) for c in content]
+                content = '\n'.join(content)
+                return content.encode('utf-8')
+            elif matches.get('inc_file', None):
+                f = matches['inc_file']
+                inc_fp = open(os.path.join(cumulative_config['changelogpath'], f))
+                content = inc_fp.read()
+                inc_fp.close()
+                return content
+            raise RuntimeException('Bad match!')
+        feed = regex.sub(subber, feed)
+        return iter(feed)
     else:
-        return iter(lambda: fp.read(block_size), '')
+        if 'wsgi.file_wrapper' in environ:
+            return environ['wsgi.file_wrapper'](fp, block_size)
+        else:
+            return iter(lambda: fp.read(block_size), '')
 
 if __name__ != '__main__':
     application = sparkle_server
