@@ -1,4 +1,4 @@
-# Latestversionserver
+# Sparle Server
 
 >> Christian Jacobsen  
 >>   <http://christian.lyderjacobsen.org/>  
