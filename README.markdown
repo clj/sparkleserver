@@ -75,11 +75,12 @@ The following keys are optional:
 
 ## Cumulative setup
 
-It is currently only possible to have one cumulative feed per sparkleserver. This feed is described with a dictionary containing the following keys: `feed`, `feedpath`, `changelogpath`, and `appname`, which are used as follows:
+The `sparkleserver.cumulative` option is used to specify a number of feeds
+which use the cumulative changelog display. `sparkleserver.cumulative` is a
+dictionary where the keys is the last path component(s) of the URL used to load
+the feed, and the value is a dictionary containing the following keys:
+`feedpath`, `changelogpath`, and `appname`. These keys are used as follows:
 
-* `feed`   
-  Is the name of the feed as it will appear on your server, it is 
-  the last path component of the URL.
 * `feedpath`  
   The actual feed that is served up. This should be a specially prepared xml
   file, including one items which instead of a changelog has a special marker

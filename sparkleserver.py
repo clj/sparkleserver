@@ -254,7 +254,7 @@ def sparkle_server(environ, start_response):
     environ['sparkleserver.data.request_time'] = datetime.now()
     feedpath = get_env('sparkleserver.feedpath', environ, None)
     cumulative = get_env('sparkleserver.cumulative', 
-            environ, [])
+            environ, {})
     if not feedpath and not cumulative:
         return render_500(
                 environ, 
@@ -266,15 +266,17 @@ def sparkle_server(environ, start_response):
         return render_404(environ, start_response)
 
     fp = None
-    for cumulative_config in cumulative:
-        if cumulative_config['feed'] == path[1:]:
-            try:
-                fp = open(os.path.join(cumulative_config['feedpath']), 'r')
-                break
-            except IOError, e:
-                return render_500(environ, start_response,
-                        msg='cumulative feed not found: ' +
-                        cumulative_config['feedpath'])
+    try:
+        cumulative_config = cumulative[path[1:]]
+    except KeyError:
+            pass
+    else:
+        try:
+            fp = open(os.path.join(cumulative_config['feedpath']), 'r')
+        except IOError, e:
+            return render_500(environ, start_response,
+                    msg='cumulative feed not found: ' +
+                    cumulative_config['feedpath'])
 
     if not fp:
         try:
