@@ -95,6 +95,17 @@ the feed, and the value is a dictionary containing the following keys:
   Is used to identify the app in the HTTP user agent string. The app name 
   and version is sent by sparkle in the format `APPNAME/VERSION`.
 
+The following optional keys can be used:
+
+* `versionregex`   
+  A regular expression (string, not a compiled regex) for matching the version out 
+  of the user agent string. By default a regular expression that will match 
+  `APPNAME/VERSION` is used, where APPNAME is set by the key `appname` and VERSION
+  can contain letters, numbers, and the period.
+* `compare`
+  A Python function (defaults to cmp) to use for comparison when sorting the 
+  list of changelog entries. Comparison is done on the whole filename of each log entry.
+
 ### The feedfile
 
 The feed used in the cumulative mode is mostly like any other feed, except that

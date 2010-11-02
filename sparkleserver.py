@@ -323,15 +323,14 @@ def sparkle_server(environ, start_response):
         def subber(match):
             matches = match.groupdict()
             if matches.get('changes', None):
-                regex = re.compile(re.escape(cumulative_config['appname']) + \
-                        '/([a-zA-Z0-9.]*)')
-                version = regex.search(environ['HTTP_USER_AGENT'])
+                r = re.escape(cumulative_config['appname']) + '/([a-zA-Z0-9.]*)'
+                r = re.compile(cumulative_config.get('versionregex', r))
+                version = r.search(environ['HTTP_USER_AGENT'])
                 content = ''
                 files = \
                 glob.glob(os.path.join(cumulative_config['changelogpath'], 'version_*'))
                 # FIXME: Customised filter
-                # FIXME: Customised sort
-                compare = cmp
+                compare = cumulative_config.get('compare', cmp)
                 files.sort(cmp=compare, reverse=True)
                 if not version:
                     if len(files) >= 1: files = [files[0]]
