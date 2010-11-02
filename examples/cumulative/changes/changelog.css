@@ -1,0 +1,15 @@
+body
+{
+	font: 16px Baskerville;
+}
+
+h1 {
+	background-color: #c2cffe;
+	padding: 5px 10px;
+	border: 1px solid #a1a1a1;
+	font-family: Lucida;
+}
+
+h2 {
+	font-family: Lucida;
+}
