@@ -334,7 +334,7 @@ def sparkle_server(environ, start_response):
                 compare = cmp
                 files.sort(cmp=compare, reverse=True)
                 if not version:
-                    files = [files[0]]
+                    if len(files) >= 1: files = [files[0]]
                 else:
                     version = version.group(1)
                     files = [f for f in files if
